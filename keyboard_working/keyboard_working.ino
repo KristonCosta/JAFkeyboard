@@ -52,15 +52,22 @@
 #define KEY_8 0x38
 #define KEY_9 0x39 
 
-uint8_t layer1[4][12] = {{KEY_ESC, KEY_1,KEY_2,KEY_3,KEY_4,KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,KEY_BACKSPACE},
-                         {KEY_TAB, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I, KEY_O, KEY_P, KEY_QUOTE},
-                         {KEY_LEFT_SHIFT, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_K, KEY_L, KEY_SEMICOLON, KEY_RETURN},
-                         {KEY_LEFT_CTRL, KEY_LEFT_ALT, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_SPACE, KEY_B, KEY_N, KEY_M, KEY_PERIOD, KEY_LAYER}};
+uint8_t layer1[4][12] = {{KEY_ESC, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I, KEY_O, KEY_P, KEY_BACKSPACE},
+                         {KEY_TAB, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_K, KEY_L, KEY_SEMICOLON, KEY_QUOTE},
+                         {KEY_LEFT_SHIFT, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_N, KEY_M, KEY_COMMA, KEY_PERIOD, KEY_FORWARD_SLASH, KEY_RETURN},
+                         {KEY_LEFT_CTRL, KEY_LEFT_ALT, KEY_HOME, KEY_END, KEY_LAYER, KEY_SPACE, KEY_SPACE, KEY_LAYER, KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_DASH, KEY_EQUALS}};
 
-uint8_t layer2[4][12] = {{KEY_ESC,KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_DELETE},
-                         {KEY_LEFT_GUI, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_LEFT_BRACKET, KEY_HOME, KEY_UP_ARROW, KEY_END, KEY_P, KEY_NULL},
-                         {KEY_LEFT_SHIFT, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_RIGHT_BRACKET, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_FORWARD_SLASH, KEY_RETURN},
-                         {KEY_LEFT_CTRL, KEY_LEFT_ALT, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_SPACE, KEY_DASH, KEY_N, KEY_M, KEY_COMMA, KEY_LAYER}};
+uint8_t layer2[4][12] = {{KEY_ESC, KEY_1,KEY_2,KEY_3,KEY_4,KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,KEY_BACKSPACE},
+                         {KEY_TAB, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_UP_ARROW, KEY_L, KEY_SEMICOLON, KEY_QUOTE},
+                         {KEY_LEFT_SHIFT, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_N, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_FORWARD_SLASH, KEY_RETURN},
+                         {KEY_LEFT_CTRL, KEY_LEFT_ALT, KEY_HOME, KEY_END, KEY_LAYER, KEY_SPACE, KEY_SPACE, KEY_LAYER, KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_DASH, KEY_EQUALS}};
+
+uint8_t layer3[4][12] = {{KEY_ESC, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I, KEY_O, KEY_P, KEY_BACKSPACE},
+                         {KEY_TAB, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_UP_ARROW, KEY_L, KEY_SEMICOLON, KEY_QUOTE},
+                         {KEY_LEFT_SHIFT, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_N, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_FORWARD_SLASH, KEY_RETURN},
+                         {KEY_LEFT_CTRL, KEY_LEFT_ALT, KEY_HOME, KEY_END, KEY_LAYER, KEY_SPACE, KEY_SPACE, KEY_LAYER, KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_DASH, KEY_EQUALS}};
+           
+                   //      {KEY_ESC,KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_DELETE},
                         
 uint8_t (*currentLayer)[12];
 
@@ -88,48 +95,56 @@ void setup() {
   currentLayer = layer1;
 }
 
+void clearPresses() {
+  Keyboard.releaseAll();
+  for (int i = 0; i < 12; i++){
+    for (int j = 0; j < 4; j++){
+      pressed[j][i] = false;
+    }
+  }
+}
+
 void loop() {
 
   int buttonState;
 
-  digitalWrite(A3,HIGH);
+
+  digitalWrite(13,HIGH);
   if (digitalRead(5) == HIGH){
     currentLayer = layer2;
     if (!functionPressed){
       functionPressed = true;
       currentLayer = layer2;
-      Keyboard.releaseAll();
-      for (int i = 0; i < 12; i++){
-        for (int j = 0; j < 4; j++){
-          pressed[j][i] = false;
-        }
-      }
+      clearPresses(); 
     } 
   } else {
     if (functionPressed && !functionLock) {   
-      Keyboard.releaseAll();
       currentLayer = layer1;
       functionPressed = false;
-      for (int i = 0; i < 12; i++){
-        for (int j = 0; j < 4; j++){
-          pressed[j][i] = false;
-        }
-      }
+      clearPresses();
     }
   }
-  digitalWrite(A3, LOW);
+  digitalWrite(13, LOW);
 
-  digitalWrite(A3, HIGH);
-  if (digitalRead(3) == HIGH){
+  digitalWrite(10, HIGH);
+  if (digitalRead(5) == HIGH){
     if (functionLock) {
       functionLock = false;
+      if (functionPressed) {
+        clearPresses();
+        currentLayer = layer2;
+      }
     } else {
       functionLock = true;
+      if (functionPressed) {
+        clearPresses();
+        currentLayer = layer3;
+      }
     }
     delay(100);
   }
   
-  digitalWrite(A3, LOW);
+  digitalWrite(10, LOW); 
   for (int colPin = 0; colPin < 12; colPin++){
     digitalWrite(columnList[colPin], HIGH);
     for (int rowPin = 0; rowPin < 4; rowPin++) {
