@@ -1,4 +1,4 @@
-#include "Keyboard.h"
+#include <Keyboard.h>
 #include <elapsedMillis.h>
 
 #define KEY_LAYER 0x00
@@ -62,7 +62,12 @@ uint8_t layer2[4][12] = {{KEY_ESC, KEY_1,KEY_2,KEY_3,KEY_4,KEY_5, KEY_6, KEY_7, 
                          {KEY_LEFT_SHIFT, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_N, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_FORWARD_SLASH, KEY_RETURN},
                          {KEY_LEFT_CTRL, KEY_LEFT_ALT, KEY_HOME, KEY_END, KEY_LAYER, KEY_SPACE, KEY_SPACE, KEY_LAYER, KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_DASH, KEY_EQUALS}};
 
-uint8_t layer3[4][12] = {{KEY_ESC, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I, KEY_O, KEY_P, KEY_BACKSPACE},
+uint8_t layer3[4][12] = {{KEY_ESC, KEY_F1,KEY_F2,KEY_F3,KEY_F4,KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10,KEY_BACKSPACE},
+                         {KEY_TAB, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_UP_ARROW, KEY_L, KEY_SEMICOLON, KEY_QUOTE},
+                         {KEY_LEFT_SHIFT, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_N, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_FORWARD_SLASH, KEY_RETURN},
+                         {KEY_LEFT_CTRL, KEY_LEFT_ALT, KEY_HOME, KEY_END, KEY_LAYER, KEY_SPACE, KEY_SPACE, KEY_LAYER, KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_DASH, KEY_EQUALS}};
+
+uint8_t layer4[4][12] = {{KEY_ESC, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY_U, KEY_I, KEY_O, KEY_P, KEY_BACKSPACE},
                          {KEY_TAB, KEY_A, KEY_S, KEY_D, KEY_F, KEY_G, KEY_H, KEY_J, KEY_UP_ARROW, KEY_L, KEY_SEMICOLON, KEY_QUOTE},
                          {KEY_LEFT_SHIFT, KEY_Z, KEY_X, KEY_C, KEY_V, KEY_B, KEY_N, KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_FORWARD_SLASH, KEY_RETURN},
                          {KEY_LEFT_CTRL, KEY_LEFT_ALT, KEY_HOME, KEY_END, KEY_LAYER, KEY_SPACE, KEY_SPACE, KEY_LAYER, KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_DASH, KEY_EQUALS}};
@@ -71,8 +76,12 @@ uint8_t layer3[4][12] = {{KEY_ESC, KEY_Q, KEY_W, KEY_E, KEY_R, KEY_T, KEY_Y, KEY
                         
 uint8_t (*currentLayer)[12];
 
-bool functionPressed = false;
+bool function1Pressed = false;
+bool function2Pressed = false;
 bool functionLock = false;
+
+elapsedMillis lockTimer;
+unsigned int lockDelay = 500;
 
 bool pressed[4][12] = {{false, false, false, false, false, false, false, false, false, false, false, false},
                       {false, false, false, false, false, false, false, false, false, false, false, false},
@@ -107,44 +116,66 @@ void clearPresses() {
 void loop() {
 
   int buttonState;
-
+  int f1State; 
+  int f2State;
 
   digitalWrite(13,HIGH);
-  if (digitalRead(5) == HIGH){
-    currentLayer = layer2;
-    if (!functionPressed){
-      functionPressed = true;
-      currentLayer = layer2;
-      clearPresses(); 
-    } 
-  } else {
-    if (functionPressed && !functionLock) {   
-      currentLayer = layer1;
-      functionPressed = false;
+  f1State = digitalRead(5);
+  digitalWrite(13,LOW);
+
+  digitalWrite(10,HIGH);
+  f2State = digitalRead(5);
+  digitalWrite(10,LOW);
+
+  if ((f2State == HIGH) && (f1State == HIGH)){
+    if (!functionLock) {
       clearPresses();
+      functionLock = true;
+      lockTimer = 0;
+      currentLayer = layer4;
     }
   }
-  digitalWrite(13, LOW);
 
-  digitalWrite(10, HIGH);
-  if (digitalRead(5) == HIGH){
-    if (functionLock) {
-      functionLock = false;
-      if (functionPressed) {
+  if (!((f2State == HIGH) && (f1State == HIGH))){
+    if ((f1State == HIGH) or (f2State == HIGH)) {
+      if (functionLock && (lockTimer > lockDelay)) {
+        lockTimer = 0;
         clearPresses();
-        currentLayer = layer2;
+        functionLock = false;
+        currentLayer = layer1;
       }
-    } else {
-      functionLock = true;
-      if (functionPressed) {
+    }
+  }
+
+  if ((f2State == HIGH) && !(f1State == HIGH)){
+    if (!functionLock) {
+      if (!function2Pressed) {
         clearPresses();
+        function2Pressed = true;
         currentLayer = layer3;
       }
     }
-    delay(100);
   }
-  
-  digitalWrite(10, LOW); 
+
+  if (!(f2State == HIGH) && (f1State == HIGH)){
+    if (!functionLock) {
+      if (!function1Pressed) {
+        clearPresses();
+        function1Pressed = true;
+        currentLayer = layer2;
+      }
+    }
+  }
+  if (!(f2State == HIGH) && !(f1State == HIGH)){
+    if (!functionLock) {
+      if (function1Pressed or function2Pressed) {
+        clearPresses();
+        function1Pressed = false;
+        function2Pressed = false;
+        currentLayer = layer1;
+      }
+    }
+  } 
   for (int colPin = 0; colPin < 12; colPin++){
     digitalWrite(columnList[colPin], HIGH);
     for (int rowPin = 0; rowPin < 4; rowPin++) {
